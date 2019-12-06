@@ -49,20 +49,6 @@ class IterTest extends TestCase {
         $this->assertSame([0, 3, 6, 9, 12, 15], toArray($mapped));
     }
 
-    public function testMapWithKeys(): void
-    {
-        $mapped = mapWithKeys(range(0, 5), func\operator('*'));
-        $this->assertSame([0, 1, 4, 9, 16, 25], toArray($mapped));
-        $mapped = mapWithKeys(
-            ['John' => 'tired', 'Jake' => 'cool', 'iter' => 'awesome'],
-            static function($key, $value) { return "{$key} is {$value}"; }
-        );
-        $this->assertSame(
-            ['John' => 'John is tired', 'Jake' => 'Jake is cool', 'iter' => 'iter is awesome'],
-            toArrayWithKeys($mapped)
-        );
-    }
-
     public function testMapKeys(): void
     {
         $range = range(0, 5);
@@ -677,6 +663,380 @@ class IterTest extends TestCase {
             \TypeError::class
         ];
     }
+
+    /**
+     * @dataProvider provideTestMapUsingKeysData
+     * @param iterable $input
+     * @param callable $callback
+     * @param array $expected
+     */
+    public function testMapWithKeys(iterable $input, callable $callback, array $expected): void
+    {
+        self::assertEquals(toArray(mapWithKeys($input, $callback)), $expected);
+    }
+
+    public function provideTestMapUsingKeysData(): array
+    {
+        return [
+            'Empty array' => [
+                'input' => [],
+                'callable' => static function($key, $value) {
+                    return [
+                        'id' => $key,
+                        'name' => $value,
+                    ];
+                },
+                'expected' => [],
+            ],
+            'Array with keys and values' => [
+                'input' => [3 => 'John', 8 => 'Dough', 1 => 'James'],
+                'callable' => static function($key, $value) {
+                    return [
+                        'id' => $key,
+                        'name' => $value,
+                    ];
+                },
+                'expected' => [
+                    [
+                        'id' => 3,
+                        'name' => 'John',
+                    ],
+                    [
+                        'id' => 8,
+                        'name' => 'Dough',
+                    ],
+                    [
+                        'id' => 1,
+                        'name' => 'James',
+                    ],
+                ],
+            ],
+            'Traversable with keys and values' => [
+                'input' => (static function() {
+                    yield 3 => 'John';
+                    yield 8 => 'Dough';
+                    yield 1 => 'James';
+                })(),
+                'callable' => static function($key, $value) {
+                    return [
+                        'id' => $key,
+                        'name' => $value,
+                    ];
+                },
+                'expected' => [
+                    [
+                        'id' => 3,
+                        'name' => 'John',
+                    ],
+                    [
+                        'id' => 8,
+                        'name' => 'Dough',
+                    ],
+                    [
+                        'id' => 1,
+                        'name' => 'James',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestMapWithKeysData
+     * @param iterable $input
+     * @param callable $callback
+     * @param array $expected
+     */
+    public function testMapKeyVals(iterable $input, callable $callback, array $expected): void
+    {
+        $actual = iterator_to_array(mapKeyVals($input, $callback));
+        sort($actual);
+        sort($expected);
+        self::assertSame($actual, $expected);
+    }
+
+    public function provideTestMapWithKeysData(): array
+    {
+        return [
+            'Empty array' => [
+                'input' => [],
+                'callable' => static function($item) {
+                    return [$item['id'], $item['name']];
+                },
+                'expected' => [],
+            ],
+            'Some array values' => [
+                'input' => [
+                    [
+                        'id' => 3,
+                        'name' => 'John',
+                    ],
+                    [
+                        'id' => 8,
+                        'name' => 'Dough',
+                    ],
+                    [
+                        'id' => 1,
+                        'name' => 'James',
+                    ],
+                ],
+                'callable' => static function($item) {
+                    return [$item['id'], $item['name']];
+                },
+                'expected' => [3 => 'John', 8 => 'Dough', 1 => 'James'],
+            ],
+            'Traversable settings non-unique values as keys' => [
+                'input' => (static function() {
+                    yield [
+                        'id' => 8,
+                        'name' => 'John',
+                    ];
+                    yield [
+                        'id' => 8,
+                        'name' => 'Dough',
+                    ];
+                    yield [
+                        'id' => 1,
+                        'name' => 'James',
+                    ];
+                })(),
+                'callable' => static function($item) {
+                    return [$item['id'], $item['name']];
+                },
+                'expected' => [8 => 'Dough', 1 => 'James'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestIterFilterData
+     * @param iterable $input
+     * @param callable $callback
+     * @param array $expected
+     */
+    public function testIterFilter(iterable $input, callable $callback, array $expected): void
+    {
+        self::assertEquals(toArray(filter($input, $callback)), $expected);
+    }
+
+    public function provideTestIterFilterData(): array
+    {
+        return [
+            'Empty array' => [
+                'input' => [],
+                'callable' => static function($item) {
+                    return $item > 8;
+                },
+                'expected' => [],
+            ],
+            'Array with integers' => [
+                'input' => [1, 8, 3, 5, 1, 4, 9, 2, 6, 4, 7, 23, 9, 10],
+                'callable' => static function($item) {
+                    return $item > 8;
+                },
+                'expected' => [9, 23, 9, 10],
+            ],
+            'Traversable with integers' => [
+                'input' => (static function() {
+                    yield 300;
+                    yield 2;
+                    yield 6;
+                    yield 9;
+                    yield 300;
+                })(),
+                'callable' => static function($item) {
+                    return $item > 8;
+                },
+                'expected' => [300, 9, 300],
+            ],
+            'Array with strings' => [
+                'input' => ['13', '', '15', 'fifteen', '1', 'some random string'],
+                'callable' => static function($item) {
+                    return strlen($item) > 1;
+                },
+                'expected' => ['13', '15', 'fifteen', 'some random string'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestIterMapData
+     * @param iterable $input
+     * @param callable $callback
+     * @param array $expected
+     */
+    public function testIterMap(iterable $input, callable $callback, array $expected): void
+    {
+        $actual = iterator_to_array(map($input, $callback));
+        sort($actual);
+        sort($expected);
+        self::assertSame($actual, $expected);
+    }
+
+    public function provideTestIterMapData(): array
+    {
+        return [
+            'Empty array' => [
+                'input' => [],
+                'callable' => static function($item) {
+                    return $item['a'];
+                },
+                'expected' => [],
+            ],
+            'Array' => [
+                'input' => [['a' => 3], ['a' => 4], ['a' => 3]],
+                'callable' => static function($item) {
+                    return $item['a'];
+                },
+                'expected' => [3, 4, 3],
+            ],
+            'Traversable with keys' => [
+                'input' => (static function() {
+                    yield 'asd' => ['a' => 3];
+                    yield 'someKey' => ['a' => 4];
+                    yield ['a' => 3];
+                })(),
+                'callable' => static function($item) {
+                    return $item['a'];
+                },
+                'expected' => ['asd' => 3, 'someKey' => 4, 3],
+            ],
+            'Array with unused key-values and callback with nested statement' => [
+                'input' => [
+                    [
+                        'bla' => 8,
+                        'children' => [
+                            [
+                                'uuid' => 3,
+                                'someOtherKey' => 9
+                            ],
+                            'plop' => 9,
+                        ]
+                    ],
+                    [
+                        'bla' => 8,
+                        'children' => [
+                            [
+                                'someOtherKey' => 9,
+                                'uuid' => 4
+                            ],
+                            'plop' => 9,
+                        ]
+                    ],
+                    [
+                        'bla' => 8,
+                        'children' => [
+                            [
+                                'uuid' => 3,
+                                'someOtherKey' => 9
+                            ],
+                            'plop' => 9,
+                        ]
+                    ],
+                ],
+                'callable' => static function($item) {
+                    return $item['children'][0]['uuid'];
+                },
+                'expected' => [3, 4, 3],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestIterToArrayData
+     * @param iterable $input
+     * @param array $expected
+     */
+    public function testIterToArray(iterable $input, array $expected): void
+    {
+        self::assertEquals(toArrayWithKeys($input), $expected);
+    }
+
+    public function provideTestIterToArrayData(): array
+    {
+        return [
+            'empty array' => [
+                'input' => [],
+                'expected' => [],
+            ],
+            'empty Traversable' => [
+                'input' => (static function() {
+                    if (false) {
+                        yield null;
+                    }
+                })(),
+                'expected' => [],
+            ],
+            'non-empty array' => [
+                'input' => [1, 4, 9],
+                'expected' => [1, 4, 9],
+            ],
+            'non-empty Traversable' => [
+                'input' => (static function() {
+                    yield 13;
+                    yield 5;
+                    yield 19;
+                })(),
+                'expected' => [13, 5, 19],
+            ],
+            'array with containing different types' => [
+                'input' => [[], [1, 3, 5], 5, 7, [8 => 9, 10], '14' => 16, 3 => [1], 71 => '3'],
+                'expected' => [[], [1, 3, 5], 5, 7, [8 => 9, 10], '14' => 16, 3 => [1], 71 => '3'],
+            ],
+            'Traversable with containing different types' => [
+                'input' => (static function() {
+                    yield [];
+                    yield [1, 3, 5];
+                    yield 5;
+                    yield 7;
+                    yield [8 => 9, 10];
+                    yield '14' => 16;
+                    yield 3 => [1];
+                    yield 71 => '3';
+                })(),
+                'expected' => [[], [1, 3, 5], 5, 7, [8 => 9, 10], '14' => 16, 3 => [1], 71 => '3'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestIterSomeData
+     * @param iterable $input
+     * @param callable $callback
+     * @param bool $expected
+     */
+    public function testAny(iterable $input, callable $callback, bool $expected): void
+    {
+        self::assertEquals(any($input, $callback), $expected);
+    }
+
+    public function provideTestIterSomeData(): array
+    {
+        return [
+            'empty array' => [
+                'input' => [],
+                'callable' => static function(int $num) {
+                    return $num < 10;
+                },
+                'expected' => false,
+            ],
+            'Contains a value that matches the predicate' => [
+                'input' => [13, 93, 32, 10, 3, 100],
+                'callable' => static function(int $num) {
+                    return $num < 10;
+                },
+                'expected' => true,
+            ],
+            'Contains no value that matches the predicate' => [
+                'input' => [13, 93, 32, 10, 30, 100],
+                'callable' => static function(int $num) {
+                    return $num < 10;
+                },
+                'expected' => false,
+            ],
+        ];
+    }
+
 }
 
 class _CountableTestDummy implements \Countable {

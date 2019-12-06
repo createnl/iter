@@ -6,11 +6,13 @@ use PHPUnit\Framework\TestCase;
 
 class IterTest extends TestCase {
     /** @dataProvider provideTestRange */
-    public function testRange($start, $end, $step, $resultArray) {
+    public function testRange($start, $end, $step, $resultArray): void
+    {
         $this->assertSame($resultArray, toArray(range($start, $end, $step)));
     }
 
-    public function provideTestRange() {
+    public function provideTestRange(): array
+    {
         return [
             [0, 10, null,  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]],
             [0, 10, 2,  [0, 2, 4, 6, 8, 10]],
@@ -23,7 +25,8 @@ class IterTest extends TestCase {
     }
 
     
-    public function testRangeStepMustBePositive() {
+    public function testRangeStepMustBePositive(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('If start < end the step must be positive');
 
@@ -31,84 +34,108 @@ class IterTest extends TestCase {
     }
 
     
-    public function testRangeStepMustBeNegative() {
+    public function testRangeStepMustBeNegative(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('If start > end the step must be negative');
 
         toArray(range(10, 0, 1));
     }
 
-    public function testMap() {
+    public function testMap(): void
+    {
         $range = range(0, 5);
-        $mapped = map(function($n) { return $n * 3; }, $range);
+        $mapped = map($range, static function($n) { return $n * 3; });
         $this->assertSame([0, 3, 6, 9, 12, 15], toArray($mapped));
     }
 
-    public function testMapKeys() {
+    public function testMapWithKeys(): void
+    {
+        $mapped = mapWithKeys(range(0, 5), func\operator('*'));
+        $this->assertSame([0, 1, 4, 9, 16, 25], toArray($mapped));
+        $mapped = mapWithKeys(
+            ['John' => 'tired', 'Jake' => 'cool', 'iter' => 'awesome'],
+            static function($key, $value) { return "{$key} is {$value}"; }
+        );
+        $this->assertSame(
+            ['John' => 'John is tired', 'Jake' => 'Jake is cool', 'iter' => 'iter is awesome'],
+            toArrayWithKeys($mapped)
+        );
+    }
+
+    public function testMapKeys(): void
+    {
         $range = range(0, 5);
-        $mapped = mapKeys(function($n) { return $n * 3; }, $range);
+        $mapped = mapKeys($range, static function($n) { return $n * 3; });
         $this->assertSame(
             [0 => 0, 3 => 1, 6 => 2, 9 => 3, 12 => 4, 15 => 5],
             toArrayWithKeys($mapped)
         );
 
-        $mapped = mapKeys('strtolower', ['A' => 1, 'B' => 2, 'C' => 3]);
+        $mapped = mapKeys(['A' => 1, 'B' => 2, 'C' => 3], 'strtolower');
         $this->assertSame(
             ['a' => 1, 'b' => 2, 'c' => 3],
             toArrayWithKeys($mapped)
         );
     }
 
-    public function testFlatMap() {
+    public function testFlatMap(): void
+    {
         $this->assertSame(
             [-1, 1, -2, 2, -3, 3, -4, 4, -5, 5],
-            toArray(flatMap(function($v) {
+            toArray(flatMap([1, 2, 3, 4, 5], static function($v) {
                 return [-$v, $v];
-            }, [1, 2, 3, 4, 5]))
+            }))
         );
         $this->assertSame(
             [],
-            toArray(flatMap(function() { return []; }, [1, 2, 3, 4, 5]))
+            toArray(flatMap([1, 2, 3, 4, 5], static function() { return []; }))
         );
     }
 
-    public function testReindex() {
-        $iter = reindex('strtoupper', ['a', 'b', 'c', 'd', 'e']);
+    public function testReindex(): void
+    {
+        $iter = reindex(['a', 'b', 'c', 'd', 'e'], 'strtoupper');
         $this->assertSame(
             ['A' => 'a', 'B' => 'b', 'C' => 'c', 'D' => 'd', 'E' => 'e'],
             toArrayWithKeys($iter)
         );
 
-        $iter = reindex(func\operator('*', 2), [1, 2, 3, 4]);
+        $iter = reindex([1, 2, 3, 4], func\operator('*', 2));
         $this->assertSame(
             [2 => 1, 4 => 2, 6 => 3, 8 => 4],
             toArrayWithKeys($iter)
         );
     }
 
-    public function testApply() {
+    public function testApply(): void
+    {
         $range = range(0, 5);
         $result = [];
-        apply(function($n) use (&$result) { $result[] = $n; }, $range);
+        apply($range, static function($n) use (&$result) { $result[] = $n; });
 
         $this->assertSame([0, 1, 2, 3, 4, 5], $result);
     }
 
-    public function testFilter() {
+    public function testFilter(): void
+    {
         $range = range(-5, 5);
-        $filtered = filter(function($n) { return $n < 0; }, $range);
+        $filtered = filter($range, static function($n) { return $n < 0; });
         $this->assertSame([-5, -4, -3, -2, -1], toArray($filtered));
     }
 
-    public function testEnumerateIsAliasOfToPairs() {
+    public function testEnumerateIsAliasOfToPairs(): void
+    {
         $this->assertSame(toArray(toPairs(['a', 'b'])), toArray(enumerate(['a', 'b'])));
     }
 
-    public function testToPairs() {
+    public function testToPairs(): void
+    {
          $this->assertSame([[0, 'a'], [1, 'b']], toArray(toPairs(['a', 'b'])));
     }
 
-    public function testToPairsWithStringKeys() {
+    public function testToPairsWithStringKeys(): void
+    {
         $enumerated = toPairs([
             'a' => 1,
             'b' => 2,
@@ -116,31 +143,37 @@ class IterTest extends TestCase {
         $this->assertSame([['a', 1], ['b', 2]], toArray($enumerated));
     }
 
-    public function testFromPairs() {
+    public function testFromPairs(): void
+    {
         $this->assertSame(['a', 'b'], toArrayWithKeys(fromPairs([[0, 'a'], [1, 'b']])));
     }
 
-    public function testFromPairsInverseToPairs() {
+    public function testFromPairsInverseToPairs(): void
+    {
         $map = ['a' => 1, 'b' => 2];
         $this->assertSame($map, toArrayWithKeys(fromPairs(toPairs($map))));
     }
 
-    public function testZip() {
+    public function testZip(): void
+    {
         $zipped = zip(range(0, 5), range(5, 0, -1));
         $this->assertSame([[0,5], [1,4], [2,3], [3,2], [4,1], [5,0]], toArray($zipped));
     }
 
-    public function testZipEmpty() {
+    public function testZipEmpty(): void
+    {
         $res = toArray(zip());
         $this->assertSame([], $res);
     }
 
-    public function testZipKeyValue() {
+    public function testZipKeyValue(): void
+    {
         $zipped = zipKeyValue(range(5, 0, -1), range(0, 5));
         $this->assertSame([5=>0, 4=>1, 3=>2, 2=>3, 1=>4, 0=>5], toArrayWithKeys($zipped));
     }
 
-    public function testChain() {
+    public function testChain(): void
+    {
         $chained = chain(range(1, 3), range(4, 6), range(7, 9));
         $this->assertSame([1, 2, 3, 4, 5, 6, 7, 8, 9], toArray($chained));
 
@@ -148,7 +181,8 @@ class IterTest extends TestCase {
         $this->assertSame([], toArray(chain()));
     }
 
-    public function testSlice() {
+    public function testSlice(): void
+    {
         $this->assertSame(
             [5, 6, 7, 8, 9],
             toArray(slice(range(0, INF), 5, 5))
@@ -162,9 +196,10 @@ class IterTest extends TestCase {
         $this->assertSame([], toArray(slice(range(0, INF), 0, 0)));
     }
 
-    public function testSliceDoNotTakeElementsAboveEndIndex() {
+    public function testSliceDoNotTakeElementsAboveEndIndex(): void
+    {
         $takenElements = 0;
-        $iterator = function () use (&$takenElements) {
+        $iterator = static function () use (&$takenElements) {
             foreach (range(0, INF) as $item) {
                 $takenElements++;
                 yield $item;
@@ -179,7 +214,8 @@ class IterTest extends TestCase {
         $this->assertSame(3, $takenElements);
     }
 
-    public function testSliceNegativeLengthError() {
+    public function testSliceNegativeLengthError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Length must be non-negative');
 
@@ -187,115 +223,129 @@ class IterTest extends TestCase {
     }
 
     
-    public function testSliceNegativeStartOffsetError() {
+    public function testSliceNegativeStartOffsetError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Start offset must be non-negative');
 
         toArray(slice(range(0, INF), -1, 5));
     }
 
-    public function testSliceNegativeStartOffsetErrorWithZeroLength() {
+    public function testSliceNegativeStartOffsetErrorWithZeroLength(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Start offset must be non-negative');
 
         toArray(slice(range(0, INF), -1, 0));
     }
 
-    public function testTakeDrop() {
+    public function testTakeDrop(): void
+    {
         $this->assertSame([1, 2, 3], toArray(take(3, [1, 2, 3, 4, 5])));
         $this->assertSame([4, 5], toArray(drop(3, [1, 2, 3, 4, 5])));
         $this->assertSame([], toArray(take(3, [])));
         $this->assertSame([], toArray(drop(3, [])));
     }
 
-    public function testRepeat() {
+    public function testRepeat(): void
+    {
         $this->assertSame([1, 1, 1, 1, 1], toArray(repeat(1, 5)));
         $this->assertSame([], toArray(repeat(1, 0)));
     }
 
     
-    public function testRepeatNegativeNumError() {
+    public function testRepeatNegativeNumError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Number of repetitions must be non-negative');
 
         toArray(repeat(1, -1));
     }
 
-    public function testKeyValue() {
+    public function testKeyValue(): void
+    {
         $array = ['a' => 'b', 'c' => 'd', 'e' => 'f'];
         $this->assertSame(['b', 'd', 'f'], toArrayWithKeys(values($array)));
         $this->assertSame(['a', 'c', 'e'], toArrayWithKeys(keys($array)));
     }
 
-    public function testReduce() {
-        $this->assertSame(15, reduce(func\operator('+'), range(1, 5), 0));
-        $this->assertSame(120, reduce(func\operator('*'), range(1, 5), 1));
+    public function testReduce(): void
+    {
+        $this->assertSame(15, reduce(range(1, 5), func\operator('+'), 0));
+        $this->assertSame(120, reduce(range(1, 5), func\operator('*'), 1));
     }
 
-    public function testComplexReduce() {
-        $this->assertSame('abcdef', reduce(function ($acc, $value, $key) {
+    public function testComplexReduce(): void
+    {
+        $this->assertSame('abcdef', reduce(['a' => 'b', 'c' => 'd', 'e' => 'f'], static function ($acc, $value, $key) {
             return $acc . $key . $value;
-        }, ['a' => 'b', 'c' => 'd', 'e' => 'f'], ''));
+        }, ''));
     }
 
-    public function testReductions() {
+    public function testReductions(): void
+    {
         $this->assertSame(
             [1, 3, 6, 10, 15],
-            toArrayWithKeys(reductions(func\operator('+'), range(1, 5), 0))
+            toArrayWithKeys(reductions(range(1, 5), func\operator('+'), 0))
         );
         $this->assertSame(
             [1, 2, 6, 24, 120],
-            toArrayWithKeys(reductions(func\operator('*'), range(1, 5), 1))
+            toArrayWithKeys(reductions(range(1, 5), func\operator('*'), 1))
         );
     }
 
-    public function testComplexReductions() {
+    public function testComplexReductions(): void
+    {
         $this->assertSame(
             ['ab', 'abcd', 'abcdef'],
-            toArrayWithKeys(reductions(function ($acc, $value, $key) {
+            toArrayWithKeys(reductions(['a' => 'b', 'c' => 'd', 'e' => 'f'], static function ($acc, $value, $key) {
                 return $acc . $key . $value;
-            }, ['a' => 'b', 'c' => 'd', 'e' => 'f'], ''))
+            }, ''))
         );
     }
 
-    public function testAnyAll() {
-        $this->assertTrue(all(func\operator('>', 0), range(1, 10)));
-        $this->assertFalse(all(func\operator('>', 0), range(-5, 5)));
-        $this->assertTrue(any(func\operator('>', 0), range(-5, 5)));
-        $this->assertFalse(any(func\operator('>', 0), range(-10, 0)));
+    public function testAnyAll(): void
+    {
+        $this->assertTrue(all(range(1, 10), func\operator('>', 0)));
+        $this->assertFalse(all(range(-5, 5), func\operator('>', 0)));
+        $this->assertTrue(any(range(-5, 5), func\operator('>', 0)));
+        $this->assertFalse(any(range(-10, 0), func\operator('>', 0)));
     }
 
-    public function testSearch() {
+    public function testSearch(): void
+    {
         $iter = new \ArrayIterator(['foo', 'bar', 'baz']);
-        $this->assertSame('baz', search(func\operator('===', 'baz'), $iter));
+        $this->assertSame('baz', search($iter, func\operator('===', 'baz')));
 
         $iter = new \ArrayIterator(['foo', 'bar', 'baz']);
-        $this->assertSame(null, search(func\operator('===', 'qux'), $iter));
+        $this->assertNull(search($iter, func\operator('===', 'qux')));
 
         $iter = new \ArrayIterator([]);
-        $this->assertSame(null, search(func\operator('===', 'qux'), $iter));
+        $this->assertNull(search($iter, func\operator('===', 'qux')));
     }
 
-    public function testTakeOrDropWhile() {
+    public function testTakeOrDropWhile(): void
+    {
         $this->assertSame(
             [3, 1, 4],
-            toArray(takeWhile(func\operator('>', 0), [3, 1, 4, -1, 5]))
+            toArray(takeWhile([3, 1, 4, -1, 5], func\operator('>', 0)))
         );
         $this->assertSame(
             [-1, 5],
-            toArray(dropWhile(func\operator('>', 0), [3, 1, 4, -1, 5]))
+            toArray(dropWhile([3, 1, 4, -1, 5], func\operator('>', 0)))
         );
         $this->assertSame(
             [1, 2, 3],
-            toArray(takeWhile(func\operator('>', 0), [1, 2, 3]))
+            toArray(takeWhile([1, 2, 3], func\operator('>', 0)))
         );
         $this->assertSame(
             [],
-            toArray(dropWhile(func\operator('>', 0), [1, 2, 3]))
+            toArray(dropWhile([1, 2, 3], func\operator('>', 0)))
         );
     }
 
-    public function testFlatten() {
+    public function testFlatten(): void
+    {
         $this->assertSame(
             [1, 2, 3, 4, 5],
             toArray(flatten([1, 2, 3, 4, 5]))
@@ -328,7 +378,8 @@ class IterTest extends TestCase {
         );
     }
 
-    public function testFlattenLevels() {
+    public function testFlattenLevels(): void
+    {
         $this->assertSame(
             [[1, [[2, [[]], 3], 4]], 5],
             toArray(flatten([[1, [[2, [[]], 3], 4]], 5], 0))
@@ -346,9 +397,9 @@ class IterTest extends TestCase {
             toArray(flatten([[1, [[2, [[]], 3], 4]], 5], 3))
         );
     }
-
     
-    public function testFlattenNegativeLevelError() {
+    public function testFlattenNegativeLevelError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Number of levels must be non-negative');
 
@@ -368,21 +419,29 @@ class IterTest extends TestCase {
         $this->assertSame([1, 2, 3], toArray($iter));
 
         // DatePeriod is Traversable, but not Iterator or IteratorAggregate
-        $iter = toIter(new \DatePeriod('R2/2012-07-01T00:00:00Z/P7D'));
+        $iter = toIter(new \DatePeriod(
+            new \DateTime('2012-07-01'),
+            new \DateInterval('P7D'),
+            new \DateTime('2012-07-16')
+        ));
         $this->assertInstanceOf('Iterator', $iter);
         $this->assertSame(
             ['2012-07-01', '2012-07-08', '2012-07-15'],
-            toArray(map(func\method('format', ['Y-m-d']), $iter))
+            iterator_to_array(map($iter, static function(\DateTimeInterface $date) {
+                return $date->format('Y-m-d');
+            }))
         );
     }
 
-    public function testCount() {
+    public function testCount(): void
+    {
         $this->assertCount(5, [1, 2, 3, 4, 5]);
         $this->assertCount(5, toIter([1, 2, 3, 4, 5]));
         $this->assertCount(42, new _CountableTestDummy);
     }
 
-    public function testIsEmpty() {
+    public function testIsEmpty(): void
+    {
         $this->assertTrue(isEmpty([]));
         $this->assertFalse(isEmpty([null]));
         $this->assertTrue(isEmpty(toArray([])));
@@ -391,7 +450,8 @@ class IterTest extends TestCase {
         $this->assertFalse(isEmpty(repeat(42)));
     }
 
-    public function testToArray() {
+    public function testToArray(): void
+    {
         $this->assertSame([1, 2, 3], toArray(['a' => 1, 'b' => 2, 'c' => 3]));
         $this->assertSame(
             [1, 2, 3],
@@ -403,7 +463,8 @@ class IterTest extends TestCase {
         );
     }
 
-    public function testToArrayWithKeys() {
+    public function testToArrayWithKeys(): void
+    {
         $this->assertSame(
             ['a' => 1, 'b' => 2, 'c' => 3],
             toArrayWithKeys(['a' => 1, 'b' => 2, 'c' => 3])
@@ -419,14 +480,16 @@ class IterTest extends TestCase {
     }
 
 
-    public function testFlip() {
+    public function testFlip(): void
+    {
         $this->assertSame(
             [1 => 'a', 2 => 'b', 3 => 'c'],
             toArrayWithKeys(flip(['a' => 1, 'b' => 2, 'c' => 3]))
         );
     }
 
-    public function testJoin() {
+    public function testJoin(): void
+    {
         $this->assertSame('', join(', ', []));
         $this->assertSame(
             'a, b, c',
@@ -434,7 +497,8 @@ class IterTest extends TestCase {
         );
     }
 
-    public function testSplit() {
+    public function testSplit(): void
+    {
         $this->assertSame(['a', 'b', 'c'], toArray(split(', ', 'a, b, c')));
         $this->assertSame(['b', 'b', 'b', 'b', 'b', 'b', 'b'], toArray(split('a', 'babababababab')));
 
@@ -446,7 +510,8 @@ class IterTest extends TestCase {
         split('', 'a');
     }
 
-    public function testChunk() {
+    public function testChunk(): void
+    {
         $iterable = new \ArrayIterator(
             ['a' => 1, 'b' => 2, 'c' => 3, 'd' => 4, 'e' => 5]
         );
@@ -483,7 +548,8 @@ class IterTest extends TestCase {
     }
 
     
-    public function testZeroChunkSizeError() {
+    public function testZeroChunkSizeError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Chunk size must be positive');
 
@@ -491,69 +557,75 @@ class IterTest extends TestCase {
     }
 
     
-    public function testNegativeChunkSizeError() {
+    public function testNegativeChunkSizeError(): void
+    {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Chunk size must be positive');
 
         toArray(chunk([1, 2, 3], -1));
     }
 
-    public function testProduct() {
-        $this->assertKeysValues([[]], [[]], function() { return product(); });
+    public function testProduct(): void
+    {
+        $this->assertKeysValues([[]], [[]], static function() { return product(); });
 
         $this->assertKeysValues(
-            [[0],[1]], [[1],[2]], function() { return product([1,2]); });
+            [[0],[1]], [[1],[2]], static function() { return product([1,2]); });
 
         $this->assertKeysValues(
             [[0,0],[0,1],[1,0],[1,1]],
             [[1,3],[1,4],[2,3],[2,4]],
-            function() { return product([1,2],[3,4]); });
+            static function() { return product([1,2],[3,4]); });
 
         $this->assertKeysValues(
             [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]],
             [[1,1,1],[1,1,2],[1,2,1],[1,2,2],[2,1,1],[2,1,2],[2,2,1],[2,2,2]],
-            function() {
+            static function() {
                 return product(range(1,2), [1,2], new \ArrayIterator([1,2]));
             }
         );
     }
 
-    function testRecurse() {
+    function testRecurse(): void
+    {
         $iter = new \ArrayIterator(['a' => 1, 'b' => 2,
             'c' => new \ArrayIterator(['d' => 3, 'e' => 4])]);
 
         $this->assertSame(
             [1, 2, [3, 4]],
-            recurse('iter\toArray', $iter)
+            recurse($iter, 'iter\toArray')
         );
 
         $this->assertSame(
             ['a' => 1, 'b' => 2, 'c' => ['d' => 3, 'e' => 4]],
-            recurse('iter\toArrayWithKeys', $iter)
+            recurse($iter, 'iter\toArrayWithKeys')
         );
     }
 
-    private function assertKeysValues(array $keys, array $values, callable $fn) {
+    private function assertKeysValues(array $keys, array $values, callable $fn): void
+    {
         $this->assertSame($keys, toArray(keys($fn())));
         $this->assertSame($values, toArray(values($fn())));
     }
 
-    public function testIsIterable() {
+    public function testIsIterable(): void
+    {
         $this->assertTrue(isIterable([]));
         $this->assertTrue(isIterable([1, 2, 3]));
         $this->assertTrue(isIterable(new \ArrayIterator([1, 2, 3])));
-        $gen = function() { yield; };
+        $gen = static function() { yield; };
         $this->assertTrue(isIterable($gen()));
 
         $this->assertFalse(isIterable(new \stdClass()));
-        $this->assertFalse(isIterable("foobar"));
+        $this->assertFalse(isIterable('foobar'));
         $this->assertFalse(isIterable(123));
     }
 
     /**
      * @dataProvider provideTestAssertIterableFails
      */
-    public function testAssertIterableFails(callable $fn, $expectedMessage, $expectedException) {
+    public function testAssertIterableFails(callable $fn, $expectedMessage, $expectedException): void
+    {
         if(null !== $expectedMessage){
             $this->expectExceptionMessage($expectedMessage);
         }
@@ -566,38 +638,39 @@ class IterTest extends TestCase {
         }
     }
 
-    public function provideTestAssertIterableFails() {
+    public function provideTestAssertIterableFails(): ?\Generator
+    {
         yield [
-            function() { return count(new \stdClass()); },
+            static function() { return count(new \stdClass()); },
             'Argument must be iterable or implement Countable',
             \InvalidArgumentException::class
         ];
         yield [
-            function() { return isEmpty(new \stdClass()); },
+            static function() { return isEmpty(new \stdClass()); },
             'Argument must be iterable or implement Countable',
             \InvalidArgumentException::class
         ];
         yield [
-            function() { return toIter(new \stdClass()); },
+            static function() { return toIter(new \stdClass()); },
             null,
             \TypeError::class
         ];
         yield [
-            function() {
-                return map(function($v) { return $v; }, new \stdClass());
+            static function() {
+                return map(new \stdClass(), static function($v) { return $v; });
             },
             null,
             \TypeError::class
         ];
         yield [
-            function() {
+            static function() {
                 return chain([1], [2], new \stdClass());
             },
             null,
             \TypeError::class
         ];
         yield [
-            function() {
+            static function() {
                 return zip([1], [2], new \stdClass());
             },
             null,

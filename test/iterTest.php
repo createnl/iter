@@ -42,13 +42,6 @@ class IterTest extends TestCase {
         toArray(range(10, 0, 1));
     }
 
-    public function testMap(): void
-    {
-        $range = range(0, 5);
-        $mapped = map($range, static function($n) { return $n * 3; });
-        $this->assertSame([0, 3, 6, 9, 12, 15], toArray($mapped));
-    }
-
     public function testMapKeys(): void
     {
         $range = range(0, 5);
@@ -101,13 +94,6 @@ class IterTest extends TestCase {
         apply($range, static function($n) use (&$result) { $result[] = $n; });
 
         $this->assertSame([0, 1, 2, 3, 4, 5], $result);
-    }
-
-    public function testFilter(): void
-    {
-        $range = range(-5, 5);
-        $filtered = filter($range, static function($n) { return $n < 0; });
-        $this->assertSame([-5, -4, -3, -2, -1], toArray($filtered));
     }
 
     public function testEnumerateIsAliasOfToPairs(): void
@@ -392,7 +378,8 @@ class IterTest extends TestCase {
         toArray(flatten([1, 2, 3], -1));
     }
 
-    public function testToIter() {
+    public function testToIter(): void
+    {
         $iter = new \ArrayIterator([1, 2, 3]);
         $this->assertSame($iter, toIter($iter));
 
@@ -448,23 +435,6 @@ class IterTest extends TestCase {
             toArray(chain(['a' => 1, 'b' => 2], ['a' => 3]))
         );
     }
-
-    public function testToArrayWithKeys(): void
-    {
-        $this->assertSame(
-            ['a' => 1, 'b' => 2, 'c' => 3],
-            toArrayWithKeys(['a' => 1, 'b' => 2, 'c' => 3])
-        );
-        $this->assertSame(
-            ['a' => 1, 'b' => 2, 'c' => 3],
-            toArrayWithKeys(new \ArrayIterator(['a' => 1, 'b' => 2, 'c' => 3]))
-        );
-        $this->assertSame(
-            ['a' => 3, 'b' => 2],
-            toArrayWithKeys(chain(['a' => 1, 'b' => 2], ['a' => 3]))
-        );
-    }
-
 
     public function testFlip(): void
     {
@@ -809,17 +779,17 @@ class IterTest extends TestCase {
     }
 
     /**
-     * @dataProvider provideTestIterFilterData
+     * @dataProvider provideIterFilterData
      * @param iterable $input
      * @param callable $callback
      * @param array $expected
      */
-    public function testIterFilter(iterable $input, callable $callback, array $expected): void
+    public function testFilter(iterable $input, callable $callback, array $expected): void
     {
         self::assertEquals(toArray(filter($input, $callback)), $expected);
     }
 
-    public function provideTestIterFilterData(): array
+    public function provideIterFilterData(): array
     {
         return [
             'Empty array' => [
@@ -836,18 +806,25 @@ class IterTest extends TestCase {
                 },
                 'expected' => [9, 23, 9, 10],
             ],
-            'Traversable with integers' => [
+            'Iterator with integers' => [
+                'input' => range(-5, 5),
+                'callable' => static function($item) {
+                    return $item < 0;
+                },
+                'expected' => [-5, -4, -3, -2, -1],
+            ],
+            'Iterator with integers and keys' => [
                 'input' => (static function() {
-                    yield 300;
-                    yield 2;
-                    yield 6;
-                    yield 9;
-                    yield 300;
+                    yield 6 => 300;
+                    yield 3 => 2;
+                    yield 1 => 6;
+                    yield 13 => 9;
+                    yield 'bla' => 300;
                 })(),
                 'callable' => static function($item) {
                     return $item > 8;
                 },
-                'expected' => [300, 9, 300],
+                'expected' => [6 => 300, 13 => 9, 'bla' => 300],
             ],
             'Array with strings' => [
                 'input' => ['13', '', '15', 'fifteen', '1', 'some random string'],
@@ -860,12 +837,12 @@ class IterTest extends TestCase {
     }
 
     /**
-     * @dataProvider provideTestIterMapData
+     * @dataProvider provideTestMapData
      * @param iterable $input
      * @param callable $callback
      * @param array $expected
      */
-    public function testIterMap(iterable $input, callable $callback, array $expected): void
+    public function testMap(iterable $input, callable $callback, array $expected): void
     {
         $actual = iterator_to_array(map($input, $callback));
         sort($actual);
@@ -873,7 +850,7 @@ class IterTest extends TestCase {
         self::assertSame($actual, $expected);
     }
 
-    public function provideTestIterMapData(): array
+    public function provideTestMapData(): array
     {
         return [
             'Empty array' => [
@@ -890,7 +867,15 @@ class IterTest extends TestCase {
                 },
                 'expected' => [3, 4, 3],
             ],
-            'Traversable with keys' => [
+            'Iterator with values' => [
+                'input' => range(0, 5),
+                'callable' => static function($value) {
+                    return $value * 3;
+                },
+                'expected' => [0, 3, 6, 9, 12, 15],
+
+            ],
+            'Iterator with keys' => [
                 'input' => (static function() {
                     yield 'asd' => ['a' => 3];
                     yield 'someKey' => ['a' => 4];
@@ -1000,7 +985,7 @@ class IterTest extends TestCase {
     }
 
     /**
-     * @dataProvider provideTestIterSomeData
+     * @dataProvider provideTestSomeData
      * @param iterable $input
      * @param callable $callback
      * @param bool $expected
@@ -1010,7 +995,7 @@ class IterTest extends TestCase {
         self::assertEquals(any($input, $callback), $expected);
     }
 
-    public function provideTestIterSomeData(): array
+    public function provideTestSomeData(): array
     {
         return [
             'empty array' => [

@@ -985,7 +985,7 @@ class IterTest extends TestCase {
     }
 
     /**
-     * @dataProvider provideTestSomeData
+     * @dataProvider provideTestAnyData
      * @param iterable $input
      * @param callable $callback
      * @param bool $expected
@@ -995,7 +995,7 @@ class IterTest extends TestCase {
         self::assertEquals(any($input, $callback), $expected);
     }
 
-    public function provideTestSomeData(): array
+    public function provideTestAnyData(): array
     {
         return [
             'empty array' => [

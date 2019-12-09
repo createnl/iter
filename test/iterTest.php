@@ -928,16 +928,16 @@ class IterTest extends TestCase {
     }
 
     /**
-     * @dataProvider provideTestIterToArrayData
+     * @dataProvider provideTestToArrayWithKeys
      * @param iterable $input
      * @param array $expected
      */
-    public function testIterToArray(iterable $input, array $expected): void
+    public function testToArrayWithKeys(iterable $input, array $expected): void
     {
         self::assertEquals(toArrayWithKeys($input), $expected);
     }
 
-    public function provideTestIterToArrayData(): array
+    public function provideTestToArrayWithKeys(): array
     {
         return [
             'empty array' => [

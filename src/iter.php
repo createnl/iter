@@ -855,6 +855,35 @@ function flatten(iterable $iterable, $levels = INF): Iterator {
 }
 
 /**
+ * Partitions items from an iterable in two partitions depending on the result of the callback
+ *
+ * This means that all elements after (and including) the first element on
+ * which the predicate fails will be returned.
+ *
+ * Examples:
+ *
+ *      iter\partition([3, -9, -3, 1, 4, -1, 5], iter\func\operator('>', 0))
+ *      => [[3, 1, 4, 5], [-9, -3, -1]]
+ *
+ * @param callable $predicate Predicate: bool function(mixed $value)
+ * @param iterable $iterable Iterable to partition
+ *
+ * @return array|array[]
+ */
+function partition(iterable $iterable, callable $predicate): array {
+    $trueValues = [];
+    $falseValues = [];
+    foreach ($iterable as $value) {
+        if ($predicate($value)) {
+            $trueValues[] = $value;
+        } else {
+            $falseValues[] = $value;
+        }
+    }
+    return [$trueValues, $falseValues];
+}
+
+/**
  * Flips the keys and values of an iterable.
  *
  * Examples:

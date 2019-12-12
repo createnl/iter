@@ -3,6 +3,7 @@
 namespace iter;
 
 use PHPUnit\Framework\TestCase;
+use function iter\func\operator;
 
 class IterTest extends TestCase {
     /** @dataProvider provideTestRange */
@@ -1018,6 +1019,38 @@ class IterTest extends TestCase {
                     return $num < 10;
                 },
                 'expected' => false,
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideTestPartitionData
+     * @param iterable $iterable
+     * @param callable $callback
+     * @param array $trueExpected
+     * @param array $falseExpected
+     */
+    public function testPartition(iterable $iterable, callable $callback, array $trueExpected, array $falseExpected): void
+    {
+        [$trueValues, $falseValues] = partition($iterable, $callback);
+        self::assertEquals($trueExpected, $trueValues);
+        self::assertEquals($falseExpected, $falseValues);
+    }
+
+    public function provideTestPartitionData(): array
+    {
+        return [
+            'Test from example' => [
+                'iterable' => [3, -9, -3, 1, 4, -1, 5],
+                'callback' => operator('>', 0),
+                'true' => [3, 1, 4, 5],
+                'false' => [-9, -3, -1],
+            ],
+            'partition arrays and other values' => [
+                'iterable' => [3, '', new \stdClass(), [], [['foo']], 'bar', static function() {}],
+                'callback' => 'is_array',
+                'true' => [[], [['foo']]],
+                'false' => [3, '', new \stdClass(), 'bar', static function() {}],
             ],
         ];
     }

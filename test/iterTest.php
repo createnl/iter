@@ -297,6 +297,47 @@ class IterTest extends TestCase {
         $this->assertNull(search($iter, func\operator('===', 'qux')));
     }
 
+    /**
+     * @dataProvider provideTestSearchKeyData
+     * @param iterable $iterable
+     * @param callable $predicate
+     * @param $expected
+     */
+    public function testSearchKey(iterable $iterable, callable $predicate, $expected): void
+    {
+        self::assertEquals($expected, searchKey($iterable, $predicate));
+    }
+
+    public function provideTestSearchKeyData(): array
+    {
+        return [
+            'Empty iterable' => [
+                'iterable' => [],
+                'predicate' => func\operator('===', 'baz'),
+                'expected' => null,
+            ],
+            'Example for docblock' => [
+                'iterable' => new \ArrayIterator(['foo', 'bar', 'baz']),
+                'predicate' => func\operator('===', 'baz'),
+                'expected' => 2,
+            ],
+            'Search miss' => [
+                'iterable' => new \ArrayIterator(['foo', 'bar', 'baz']),
+                'predicate' => func\operator('===', 'qux'),
+                'expected' => null,
+            ],
+            'Search with non scalar key' => [
+                'iterable' => (static function() {
+                    yield ['name' => 'foo'] => 'foo';
+                    yield ['name' => 'bar'] => 'bar';
+                    yield ['name' => 'baz'] => 'baz';
+                })(),
+                'predicate' => func\operator('===', 'bar'),
+                'expected' => ['name' => 'bar'],
+            ],
+        ];
+    }
+
     public function testTakeOrDropWhile(): void
     {
         $this->assertSame(

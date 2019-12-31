@@ -751,6 +751,33 @@ function search(iterable $iterable, callable $predicate) {
 }
 
 /**
+ * Searches an iterable until a predicate returns true, then returns
+ * the key of the matching element.
+ *
+ * Examples:
+ *
+ *      iter\searchKey(iter\func\operator('===', 'baz'), ['foo', 'bar', 'baz'])
+ *      => 2
+ *
+ *      iter\searchKey(iter\func\operator('===', 'qux'), ['foo', 'bar', 'baz'])
+ *      => null
+ *
+ * @param callable $predicate Predicate: bool function(mixed $value)
+ * @param iterable $iterable The iterable to search
+ *
+ * @return null|mixed
+ */
+function searchKey(iterable $iterable, callable $predicate) {
+    foreach ($iterable as $key => $value) {
+        if ($predicate($value)) {
+            return $key;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Takes items from an iterable until the predicate fails for the first time.
  *
  * This means that all elements before (and excluding) the first element on
